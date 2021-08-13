@@ -1,81 +1,76 @@
-import SchedulesGenerator from '@/services/ShedulesGenerator/Generator';
+// import SchedulesGenerator from '@/services/ShedulesGenerator/Generator';
 import SchedulesStructure from '@/services/ShedulesGenerator/DataStructure';
 import DataStore from '@/services/ShedulesGenerator/Data/Store';
-import DataDate from '@/services/ShedulesGenerator/Data/Date';
-import DataPeriod from '@/services/ShedulesGenerator/Data/Period';
 import DataEmployee from '@/services/ShedulesGenerator/Data/Employee';
 
 describe('Test schedure structure', function () {
-  const structure = new SchedulesStructure();
+  it('Store and shift data test', function () {
+    const store1 = new DataStore({ name: '豐原店' });
+    store1.addShift(['07:00', '15:00'], ['15:00', '23:00'], ['23:00', '07:00']);
 
-  it('Push node test', function () {
+    expect(store1.shift(0)?.getStartTime()).toBe('07:00');
+    expect(store1.shift(3)).toBeNull();
+
+    store1.shift(0)?.setLabourLimit(2);
+    expect(store1.shift(0)?.getLabourLimit()).toBe(2);
+    store1.shift(1)?.setLabourLimit(2);
+    expect(store1.shift(1)?.getLabourLimit()).toBe(2);
+    store1.shift(2)?.setLabourLimit(1);
+    expect(store1.shift(2)?.getLabourLimit()).toBe(1);
+
+    expect(store1.shift(0)?.getDiff()).toBe(60 * 60 * 8);
+  });
+
+  it('Employees data test', function () {
+    const employee1 = new DataEmployee({ name: 'Simen' });
+    expect(typeof employee1.getId() === 'string').toBeTruthy();
+
+    const day3After = new Date();
+    day3After.setDate(day3After.getDate() + 2);
+    employee1.assignHolidays(day3After);
+
+    const holidays = employee1.getWannaHolidays();
+
+    expect(holidays.length).toBe(1);
+
+    employee1.clearHolidays();
+    const holidaysClear = employee1.getWannaHolidays();
+
+    expect(holidaysClear.length).toBe(0);
+
+    const totalDays = 7;
+    employee1.setWorkDaysLimit(1, totalDays);
+    employee1.assignWorkingDays(day3After);
+
     expect(() => {
-      structure.push(new DataEmployee());
-    }).toThrow();
+      employee1.assignWorkingDays(day3After);
+    }).toThrow('Same day error');
+
+    expect(employee1.getWorkDays().length).toBe(1);
+
+    const day4After = new Date();
+    day4After.setDate(day4After.getDate() + 3);
 
     expect(() => {
-      structure.push(new DataDate());
-    }).toThrow();
-
-    expect(() => {
-      structure.push(new DataPeriod());
-    }).toThrow();
-
-    structure.push(new DataStore());
-    expect(structure.countStore()).toBe(1);
-
-    structure.push([new DataStore(), new DataStore(), new DataStore()]);
-    expect(structure.countStore()).toBe(4);
-  });
-});
-
-describe('Test the schedule generator', function () {
-  const Schedule = new SchedulesGenerator();
-
-  it('Schedules result and traversal logs should be null current step', function () {
-    const schedules = Schedule.schedules();
-    const logs = Schedule.traversalLogs();
-
-    expect(schedules).toBeNull();
-    expect(logs).toBeNull();
+      employee1.assignWorkingDays(day4After);
+    }).toThrow('work days limiation exceed');
   });
 
-  it('At this moment, the schedule tree should be invalid.', function () {
-    expect(Schedule.isValid()).toBe(false);
-  });
+  it('Structure test', function () {
+    const today = new Date();
+    const day7After = new Date();
+    day7After.setDate(day7After.getDate() + 6);
 
-  it('Length of logs should be over than zero.', function () {
-    Schedule.setDays();
-    Schedule.setEmployees();
-    Schedule.setStores();
+    const structure = new SchedulesStructure(today, day7After);
+    const store1 = new DataStore();
+    const employee1 = new DataEmployee({ name: 'Simen' });
+    const employee2 = new DataEmployee({ name: 'Bitch' });
 
-    Schedule.run();
+    structure.put(store);
+    structure.put(employee1, employee2);
 
-    const logs = Schedule.traversalLogs();
-    const schedules = Schedule.schedules();
-
-    expect(Array.isArray(logs)).toBeTruthy();
-    Array.isArray(logs) && expect(logs.length > 0).toBeTruthy();
-    expect(typeof logs?.[0].getAction() === 'string').toBeTruthy();
-
-    const data = schedules.getDataByDate();
-  });
-
-  it('At this moment, The schedule validation should be true.', function () {
-    expect(Schedule.isValid()).toBeTruthy();
-  });
-
-  it('Schedules result and traversal logs should be null again', function () {
-    Schedule.clear();
-
-    const logs = Schedule.traversalLogs();
-    const schedules = Schedule.schedules();
-
-    expect(schedules).toBeNull();
-    expect(logs).toBeNull();
-  });
-
-  it("At this moment, the schedule tree should be invalid again cause it's empty.", function () {
-    expect(Schedule.isValid()).toBe(false);
+    expect(typeof structure.isValid() === 'boolean').toBeTruthy();
+    structure.random();
+    const result = structure.result();
   });
 });
