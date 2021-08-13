@@ -10,6 +10,7 @@ export interface DataBaseInterface {
 
 export default class DataBase implements DataBaseInterface {
   protected uuid: string = '';
+
   protected attributes: DataAttributes = {};
 
   constructor(attributes: DataAttributes) {

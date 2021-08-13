@@ -16,8 +16,11 @@ interface ShiftInterface {
 
 export default class Shift implements ShiftInterface {
   protected startTime: Moment;
+
   protected endTime: Moment;
+
   protected labourLimit: number = 0;
+
   private _format: string = 'HH:mm';
 
   /**

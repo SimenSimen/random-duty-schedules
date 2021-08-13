@@ -15,12 +15,15 @@ export interface SchedulesGeneratorInterface {
 
 export default class SchedulesGenerator implements SchedulesGeneratorInterface {
   protected logs: Log[] | null = null;
+
   protected result: Collection | null = null;
+
   protected structure: Structure;
 
   constructor() {
     this.structure = new Structure();
   }
+
   run() {
     this.logs = [];
   }
@@ -42,7 +45,9 @@ export default class SchedulesGenerator implements SchedulesGeneratorInterface {
   }
 
   setDays() {}
+
   setEmployees() {}
+
   setStores() {}
 
   private _checkTreeState(): boolean {

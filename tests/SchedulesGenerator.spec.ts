@@ -3,10 +3,14 @@ import SchedulesStructure from '@/services/ShedulesGenerator/DataStructure';
 import DataStore from '@/services/ShedulesGenerator/Data/Store';
 import DataEmployee from '@/services/ShedulesGenerator/Data/Employee';
 
-describe('Test schedure structure', function () {
-  it('Store and shift data test', function () {
+describe('Test schedure structure', () => {
+  it('Store and shift data test', () => {
     const store1 = new DataStore({ name: '豐原店' });
     store1.addShift(['07:00', '15:00'], ['15:00', '23:00'], ['23:00', '07:00']);
+
+    expect(() => {
+      store1.addShift(['asdasd', 'asdsad']);
+    }).toThrow('INVALID_TIME_FORMAT');
 
     expect(store1.shift(0)?.getStartTime()).toBe('07:00');
     expect(store1.shift(3)).toBeNull();
@@ -21,13 +25,18 @@ describe('Test schedure structure', function () {
     expect(store1.shift(0)?.getDiff()).toBe(60 * 60 * 8);
   });
 
-  it('Employees data test', function () {
+  it('Employees data test', () => {
     const employee1 = new DataEmployee({ name: 'Simen' });
     expect(typeof employee1.getId() === 'string').toBeTruthy();
 
     const day3After = new Date();
     day3After.setDate(day3After.getDate() + 2);
+
     employee1.assignHolidays(day3After);
+
+    expect(() => {
+      employee1.assignHolidays('setset');
+    }).toThrow('INVALID_TIME_FORMAT');
 
     const holidays = employee1.getWannaHolidays();
 
@@ -38,25 +47,24 @@ describe('Test schedure structure', function () {
 
     expect(holidaysClear.length).toBe(0);
 
-    const totalDays = 7;
-    employee1.setWorkDaysLimit(1, totalDays);
+    employee1.setWorkDaysLimit(1);
     employee1.assignWorkingDays(day3After);
 
     expect(() => {
       employee1.assignWorkingDays(day3After);
-    }).toThrow('Same day error');
+    }).toThrow('DATE_DUPLICATED');
 
-    expect(employee1.getWorkDays().length).toBe(1);
+    expect(employee1.getActualWorkingDays()).toBe(1);
 
     const day4After = new Date();
     day4After.setDate(day4After.getDate() + 3);
 
     expect(() => {
       employee1.assignWorkingDays(day4After);
-    }).toThrow('work days limiation exceed');
+    }).toThrow('WORKING_DAYS_LIMITAION_EXCEED');
   });
 
-  it('Structure test', function () {
+  it('Structure test', () => {
     const today = new Date();
     const day7After = new Date();
     day7After.setDate(day7After.getDate() + 6);
