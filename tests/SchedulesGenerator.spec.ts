@@ -3,7 +3,7 @@ import SchedulesStructure from '@/services/ShedulesGenerator/DataStructure';
 import DataStore from '@/services/ShedulesGenerator/Data/Store';
 import DataEmployee from '@/services/ShedulesGenerator/Data/Employee';
 
-describe('Test schedure structure', () => {
+describe('Schedule generator data testings', () => {
   it('Store and shift data test', () => {
     const store1 = new DataStore({ name: '豐原店' });
     store1.addShift(['07:00', '15:00'], ['15:00', '23:00'], ['23:00', '07:00']);
@@ -63,22 +63,45 @@ describe('Test schedure structure', () => {
       employee1.assignWorkingDays(day4After);
     }).toThrow('WORKING_DAYS_LIMITAION_EXCEED');
   });
+});
 
-  it('Structure test', () => {
-    const today = new Date();
-    const day7After = new Date();
-    day7After.setDate(day7After.getDate() + 6);
+describe('Schdule data structure test', () => {
+  const nextWeeks: Date[] = [];
 
-    const structure = new SchedulesStructure(today, day7After);
-    const store1 = new DataStore();
+  it('Structure settings test', () => {
+    const structure = new SchedulesStructure(
+      nextWeeks[0],
+      nextWeeks[nextWeeks.length - 1]
+    );
+
+    const store1 = new DataStore({ name: 'Store 1' });
     const employee1 = new DataEmployee({ name: 'Simen' });
     const employee2 = new DataEmployee({ name: 'Bitch' });
 
-    structure.put(store);
-    structure.put(employee1, employee2);
+    structure.put(store1);
 
-    expect(typeof structure.isValid() === 'boolean').toBeTruthy();
-    structure.random();
-    const result = structure.result();
+    expect(function () {
+      structure.put(store1);
+    }).toThrow('ELEMENT_DUPLICATED');
+
+    structure.put(employee1, employee2);
+  });
+
+  it('Structure valid test', () => {
+    const structure = new SchedulesStructure(
+      nextWeeks[0],
+      nextWeeks[nextWeeks.length - 1]
+    );
+
+    const store1 = new DataStore({ name: 'Store 1' });
+    const employee1 = new DataEmployee({ name: 'Simen' });
+    const employee2 = new DataEmployee({ name: 'Bitch' });
+
+    /**
+     * Should has no solution
+     */
+    expect(structure.isValid()).toBe(false);
+
+    expect(structure.isValid()).toBe(true);
   });
 });
