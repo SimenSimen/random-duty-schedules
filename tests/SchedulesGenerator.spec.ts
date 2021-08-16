@@ -67,8 +67,23 @@ describe('Schedule generator data testings', () => {
 
 describe('Schdule data structure test', () => {
   const nextWeeks: Date[] = [];
+  const today = new Date();
+  const todayNumber = today.getDay() + 1;
+  const diffToNextMonday = 7 - todayNumber + 1;
+
+  for (let i = 0, length = 7; i < length; i++) {
+    const date = new Date();
+    const dateNumber = date.getDate();
+    date.setDate(dateNumber + i + diffToNextMonday);
+
+    nextWeeks.push(date);
+  }
 
   it('Structure settings test', () => {
+    expect(function () {
+      new SchedulesStructure(nextWeeks[1], nextWeeks[0]);
+    }).toThrow('INVALID_TIME_RANGE');
+
     const structure = new SchedulesStructure(
       nextWeeks[0],
       nextWeeks[nextWeeks.length - 1]
@@ -79,12 +94,11 @@ describe('Schdule data structure test', () => {
     const employee2 = new DataEmployee({ name: 'Bitch' });
 
     structure.put(store1);
+    structure.put(employee1, employee2);
 
     expect(function () {
       structure.put(store1);
     }).toThrow('ELEMENT_DUPLICATED');
-
-    structure.put(employee1, employee2);
   });
 
   it('Structure valid test', () => {
@@ -94,6 +108,7 @@ describe('Schdule data structure test', () => {
     );
 
     const store1 = new DataStore({ name: 'Store 1' });
+    store1.addShift(['07:00', '15:00'], ['15:00', '23:00'], ['23:00', '07:00']);
     const employee1 = new DataEmployee({ name: 'Simen' });
     const employee2 = new DataEmployee({ name: 'Bitch' });
 
@@ -102,6 +117,13 @@ describe('Schdule data structure test', () => {
      */
     expect(structure.isValid()).toBe(false);
 
+    structure.put(store1);
+    structure.put(employee1, employee2);
+
+    structure.checkRequiredData();
+
     expect(structure.isValid()).toBe(true);
+
+    structure.random();
   });
 });
