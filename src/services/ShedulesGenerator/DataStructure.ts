@@ -23,17 +23,22 @@ interface TreeNode {
 
 export default class DataStructure implements DataStructureInterface {
   protected start;
+
   protected end;
+
   protected valid: boolean = false;
+
   protected employees: Employee[] = [];
+
   protected stores: Store[] = [];
+
   protected tree: TreeNode[] = [];
 
   constructor(
     start: Date,
     end: Date,
     employees: Employee[] = [],
-    stores: Store[] = []
+    stores: Store[] = [],
   ) {
     if (start.getTime() > end.getTime()) {
       throw 'INVALID_TIME_RANGE';
@@ -44,20 +49,25 @@ export default class DataStructure implements DataStructureInterface {
     this.employees = employees;
     this.stores = stores;
   }
+
   public setStartDate(date: Date): void {
     this.start = moment(date);
   }
+
   public setEndDate(date: Date): void {
     this.end = moment(date);
   }
+
   public clearEmployees(): void {
     this.employees = [];
   }
+
   public clearStores(): void {
     this.stores = [];
   }
+
   public put(...args: Array<Employee | Store>): void {
-    for (let i = 0, length = args.length; i < length; i++) {
+    for (let i = 0, { length } = args; i < length; i++) {
       const element = args[i];
       if (this._checkDuplicate(element)) {
         throw 'ELEMENT_DUPLICATED';
@@ -70,6 +80,7 @@ export default class DataStructure implements DataStructureInterface {
       }
     }
   }
+
   public isValid(): boolean {
     return this.valid;
   }
@@ -86,6 +97,7 @@ export default class DataStructure implements DataStructureInterface {
         break;
     }
   }
+
   public random(): void {
     this._initTree();
   }
@@ -109,6 +121,7 @@ export default class DataStructure implements DataStructureInterface {
       this.tree.push(dateTreeNode);
     }
   }
+
   /**
    * @todo check the shift is valid with employee data
    */
@@ -124,17 +137,17 @@ export default class DataStructure implements DataStructureInterface {
       return result;
     });
   }
+
   private _checkDuplicate(element: Store | Employee) {
     let target: 'employees' | 'stores' | '' = '';
     element instanceof Employee && (target = 'employees');
     element instanceof Store && (target = 'stores');
 
     return target
-      ? this[target].some((source) => {
-          return source.getId() === element.getId();
-        })
+      ? this[target].some((source) => source.getId() === element.getId())
       : false;
   }
+
   private _createTreeNode(element: TreeElement, weight: number = 1): TreeNode {
     return {
       element,
