@@ -4,7 +4,7 @@
   "description": "generate schedules randomly",
   "type": "module",
   "scripts": {
-    "start": "node --no-warnings --loader ts-node/esm --experimental-specifier-resolution=node ./index.ts",
+    "start": "node --no-warnings --loader ts-node/esm --experimental-specifier-resolution=node ./src/index.ts",
     "test": "jest",
     "lint": "eslint --fix --ext .js,.ts . "
   },
@@ -15,6 +15,7 @@
     "@types/node": "^16.4.12",
     "@typescript-eslint/eslint-plugin": "4.4.1",
     "@typescript-eslint/parser": "^4.29.0",
+    "cross-env": "^7.0.3",
     "eslint": "^7.32.0",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-plugin-import": "^2.23.4",

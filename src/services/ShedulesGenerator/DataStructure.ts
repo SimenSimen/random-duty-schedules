@@ -15,6 +15,19 @@ interface DataStructureInterface {
 
 type TreeElement = Moment | Store | Employee | Shift;
 
+/**
+ * [x, y]
+ */
+type CoordinateNode = [number, number];
+
+interface ScheduleNode {
+  store: Store;
+  shift: Shift;
+}
+
+type ScheduleXAxis = (ScheduleNode | null | false)[];
+type ScheduleMap = ScheduleXAxis[];
+
 interface TreeNode {
   element: TreeElement;
   children: TreeNode[];
@@ -32,13 +45,14 @@ export default class DataStructure implements DataStructureInterface {
 
   protected stores: Store[] = [];
 
-  protected tree: TreeNode[] = [];
+  protected map: ScheduleMap = [];
+  protected tracking: CoordinateNode[] = [];
 
   constructor(
     start: Date,
     end: Date,
     employees: Employee[] = [],
-    stores: Store[] = [],
+    stores: Store[] = []
   ) {
     if (start.getTime() > end.getTime()) {
       throw 'INVALID_TIME_RANGE';
@@ -89,7 +103,6 @@ export default class DataStructure implements DataStructureInterface {
     switch (true) {
       case this.stores.length === 0:
       case this.employees.length === 0:
-      case this._checkStoreShiftInvalid():
         break;
 
       default:
@@ -98,44 +111,159 @@ export default class DataStructure implements DataStructureInterface {
     }
   }
 
+  /**
+   * Employees data as y axis
+   * Days data as x axis
+   */
   public random(): void {
-    this._initTree();
+    const daysLength: number = this.end.diff(this.start, 'days') + 1;
+    const employees = [...this.employees];
+    const employeeLength: number = employees.length;
+    const days: Moment[] = [];
+    const shiftsNodes: ScheduleNode[] = [];
+
+    this._initMap(daysLength, employeeLength);
+
+    for (let i = 0; i < daysLength; i++) {
+      const date = this.start.toDate();
+      date.setDate(date.getDate() + i);
+      days.push(moment(date));
+    }
+
+    for (let i = 0, length = this.stores.length; i < length; i++) {
+      const store = this.stores[i];
+      const shifts = store.allShifts();
+
+      for (let j = 0, lengthJ = shifts.length; j < lengthJ; j++) {
+        shiftsNodes.push({ store, shift: shifts[j] });
+      }
+    }
+
+    let scanning = true;
+    let setNodeCount = 0;
+
+    const currentPoint: CoordinateNode = [
+      this._randomLength(daysLength),
+      this._randomLength(employeeLength),
+    ];
+
+    const mapSize = daysLength * employeeLength;
+
+    while (scanning) {
+      const isAnyTargetUnavailable: boolean =
+        shiftsNodes.length === 0 ||
+        employees.length === 0 ||
+        setNodeCount >= mapSize;
+
+      if (isAnyTargetUnavailable) {
+        scanning = false;
+      } else {
+        /** node traversing */
+        const [x, y] = currentPoint;
+
+        const day = days[x];
+        const employee = this.employees[y];
+
+        const isWannaDay: boolean = employee
+          .getWannaHolidays()
+          .some((holiday) => {
+            return holiday.format('YYYYMMDD') === day.format('YYYYMMDD');
+          });
+
+        const empolyeeCanWork: boolean =
+          this._getEmployeeWorkDaysOnMap(y) < employee.getWorkDaysLimit();
+
+        if (!empolyeeCanWork) {
+          const localEmployeeIndex: number = employees.findIndex(
+            (_employee) => {
+              return _employee.getId() === employee.getId();
+            }
+          );
+
+          localEmployeeIndex > 0 && employees.splice(localEmployeeIndex, 1);
+        }
+
+        if (!isWannaDay && empolyeeCanWork) {
+          /** Should go work */
+          const duty = this._employeeWorkRankThisDay(x, y, shiftsNodes);
+          duty && this._setWorkDayOnMap(x, y, duty) && setNodeCount++;
+        } else {
+          /** Should be on holiday */
+          this._setHolidayOnMap(x, y);
+        }
+
+        setNodeCount++;
+        this.tracking.push([x, y]);
+        setNodeCount < mapSize && this._goNextNode(currentPoint);
+      }
+    }
+
+    console.log(this.map);
   }
 
-  private _initTree() {
-    const diffDays: number = this.end.diff(this.start, 'days');
-    for (let i = 0; i <= diffDays; i++) {
-      const startDate = this.start.toDate();
-      startDate.setDate(startDate.getDate() + i);
+  private _goNextNode(currentPoint: CoordinateNode) {
+    const flatternSetNode: CoordinateNode[] = [];
 
-      const dateTreeNode = this._createTreeNode(moment(startDate));
+    for (let y = 0, length = this.map; y < length.length; y++) {
+      const avaliablePosistion = this.map[y]
+        .map((node, x: number) =>
+          node === null ? ([x, y] as CoordinateNode) : null
+        )
+        .filter(
+          (position: CoordinateNode | null) => position !== null
+        ) as CoordinateNode[];
 
-      dateTreeNode.children = this.stores.map((store) => {
-        const storeTreeNode = this._createTreeNode(store);
-        storeTreeNode.children = store
-          .allShifts()
-          .map((shift) => this._createTreeNode(shift));
-        return storeTreeNode;
-      });
+      flatternSetNode.concat(avaliablePosistion);
+    }
 
-      this.tree.push(dateTreeNode);
+    const nodeLength: number = flatternSetNode.length;
+
+    if (nodeLength) {
+      const [newX, newY] = flatternSetNode[this._randomLength(nodeLength)];
+
+      currentPoint[0] = newX;
+      currentPoint[1] = newY;
     }
   }
 
-  /**
-   * @todo check the shift is valid with employee data
-   */
-  private _checkStoreShiftInvalid(): boolean {
-    return this.stores.some((store: Store) => {
-      let result = false;
-      const shifts = store.allShifts();
-      if (shifts.length !== 0) {
-        shifts.forEach(() => {});
-      } else {
-        result = true;
-      }
-      return result;
-    });
+  private _employeeWorkRankThisDay(
+    x: number,
+    y: number,
+    scheduleNode: ScheduleNode[]
+  ): ScheduleNode | null {
+    const index = 1;
+    const duty = scheduleNode.splice(index, 1)[0];
+
+    /** @todo */
+    return duty;
+  }
+
+  private _getEmployeeWorkDaysOnMap(index: number): number {
+    return this.map[index]
+      .map((node) => {
+        const result: number = !node ? 0 : 1;
+        return result;
+      })
+      .reduce((a, b) => a + b);
+  }
+
+  private _setHolidayOnMap(x: number, y: number): void {
+    this.map[x][y] = false;
+  }
+
+  private _setWorkDayOnMap(x: number, y: number, node: ScheduleNode) {
+    this.map[x][y] = node;
+  }
+
+  private _initMap(x: number, y: number): void {
+    this.tracking = [];
+    this.map = Array(x)
+      .fill(0)
+      .map(() => Array(y).fill(null));
+  }
+
+  private _randomLength(max: number): number {
+    return Math.floor(Math.random() * max);
   }
 
   private _checkDuplicate(element: Store | Employee) {
@@ -146,13 +274,5 @@ export default class DataStructure implements DataStructureInterface {
     return target
       ? this[target].some((source) => source.getId() === element.getId())
       : false;
-  }
-
-  private _createTreeNode(element: TreeElement, weight: number = 1): TreeNode {
-    return {
-      element,
-      weight,
-      children: [],
-    };
   }
 }
